@@ -2,85 +2,66 @@ import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestj
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+import { InjectModel } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { User } from './schemas/user.schema';
+
 @Injectable()
 export class UsersService {
-    private users = [
-        {
-            "id": 1,
-            "name": "Leanne Graham",
-            "email": "Sincere@april.biz",
-            "role": "INTERN",
-        },
-        {
-            "id": 2,
-            "name": "Ervin Howell",
-            "email": "Shanna@melissa.tv",
-            "role": "INTERN",
-        },
-        {
-            "id": 3,
-            "name": "Clementine Bauch",
-            "email": "Nathan@yesenia.net",
-            "role": "ENGINEER",
-        },
-        {
-            "id": 4,
-            "name": "Patricia Lebsack",
-            "email": "Julianne.OConner@kory.org",
-            "role": "ENGINEER",
-        },
-        {
-            "id": 5,
-            "name": "Chelsey Dietrich",
-            "email": "Lucio_Hettinger@annie.ca",
-            "role": "ADMIN",
-        }
-    ]
+    
+    constructor(
+        @InjectModel(User.name)
+        private users: mongoose.Model<User>
+    ) {}
 
-    findAll(role?: 'INTERN' | 'ENGINEER' | 'ADMIN') {
-        if (role) {
-            const rolesArray = this.users.filter(user => user.role === role)
-            if (rolesArray.length === 0) throw new NotFoundException("User Role not found!")
-            return rolesArray;
-        }
-        return this.users
+    async findAllUser(): Promise<User[]> {
+        const users = await this.users.find()
+        return users;
     }
 
-    findOne(id: number) {
-        const user = this.users.find(user => user.id === id)
-        if (typeof(id) === "string") throw new HttpException('Invalid id. Must be a number.', HttpStatus.BAD_REQUEST);
- 
-
-        if (!user) throw new NotFoundException("User not found!")
-        return user
-    }    
-
-    create(createUserDto: CreateUserDto) {
-        const usersByHighestId = [...this.users].sort((a, b) => b.id - a.id)
-        const newUser = {
-            id: usersByHighestId[0].id + 1,
-            ...createUserDto
+    async findUserById(id: string): Promise<User> {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new HttpException('Invalid ID!', HttpStatus.BAD_REQUEST);
         }
-        this.users.push(newUser)
-        return newUser
+        const user = await this.users.findById(id);
+        if (!user) {
+            throw new NotFoundException("No user found!");
+        }
+        return user;
+    }  
+
+    async createUser(createUserDto: CreateUserDto): Promise<User> {
+        const existingUser = await this.users.findOne({ email: createUserDto.email });
+        if (existingUser) {
+            throw new HttpException('Email already registered', HttpStatus.BAD_REQUEST);
+        }
+        const newUser = new this.users(createUserDto);
+        await newUser.save();
+        return newUser;
     }
 
-    update(id: number, updatedUserDto: UpdateUserDto) {
-        this.users = this.users.map(user => {
-            if (user.id === id) {
-                return { ...user, ...updatedUserDto }
-            }
-            return user
-        })
-
-        return this.findOne(id)
+    async updateUserById(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new HttpException('Invalid ID!', HttpStatus.BAD_REQUEST);
+        }
+        const updatedUser = await this.users.findByIdAndUpdate(id, updateUserDto, {
+            new: true,
+            runValidators: true,
+        });
+        if (!updatedUser) {
+            throw new NotFoundException("No user found!");
+        }
+        return updatedUser;
     }
 
-    delete(id: number) {
-        const removedUser = this.findOne(id)
-
-        this.users = this.users.filter(user => user.id !== id)
-
-        return removedUser
+    async deleteUserById(id: string): Promise<User> {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new HttpException('Invalid ID!', HttpStatus.BAD_REQUEST);
+        }
+        const user = await this.users.findByIdAndDelete(id);
+        if (!user) {
+            throw new NotFoundException("No user found!");
+        }
+        return user;
     }
 }

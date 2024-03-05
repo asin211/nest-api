@@ -1,35 +1,41 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
 
-    constructor(private readonly usersService: UsersService) {}
+    constructor(private usersService: UsersService) {}
 
-    @Get() // GET /users OR /users?role=value&age=value
-    findAll(@Query("role") role?: "INTERN" | "ENGINEER" | "ADMIN"){
-        return this.usersService.findAll(role);
+    @Get() // GET
+    @UsePipes(new ValidationPipe())
+    async findAllUsers(): Promise<User[]>{
+        return this.usersService.findAllUser();
     }
 
     @Get(':id') // GET /users/:id
-    findOne(@Param("id", ParseIntPipe) id: number){
-        return this.usersService.findOne(id);
+    @UsePipes(new ValidationPipe())
+    async findUser(@Param("id") id: string): Promise<User>{
+        return this.usersService.findUserById(id);
     }
 
     @Post() //POST /users
-    create(@Body(ValidationPipe) createUserDto: CreateUserDto){
-        return this.usersService.create(createUserDto);
+    @UsePipes(new ValidationPipe())
+    async createUser(@Body() user: CreateUserDto): Promise<User> {
+        return this.usersService.createUser(user);
     }
 
-    @Patch(':id') // PATCH /users/:id
-    update(@Param("id", ParseIntPipe) id: number, @Body(ValidationPipe) updateUserDto: UpdateUserDto){
-        return this.usersService.update(id, updateUserDto);
+    @Patch(':id') //PATCH /users/:id
+    @UsePipes(new ValidationPipe())
+    async updateUser(@Param("id") id: string, @Body() updateUserDto: UpdateUserDto): Promise<User> {
+        return this.usersService.updateUserById(id, updateUserDto);
     }
 
     @Delete(':id') // DELETE /users/:id
-    delete(@Param("id", ParseIntPipe) id: number){
-        return this.usersService.delete(id); // unary Plus (convert string to number)
+    @UsePipes(new ValidationPipe())
+    async deleteUser(@Param("id") id: string): Promise<User> {
+        return this.usersService.deleteUserById(id);
     }
 }

@@ -5,13 +5,15 @@ export class CreateUserDto {
     @IsString(
         // {message: "Invalid name"}
     )
-    name: string;
+    readonly name: string;
 
     @IsEmail({}, {message: "Invalid email"}) 
-    email: string;
+    readonly email: string;
 
     @IsEnum(["INTERN", "ENGINEER", "ADMIN"], {
         message: "Role must be either INTERN, ENGINEER, or ADMIN"
     })
-    role: "INTERN" | "ENGINEER" | "ADMIN";
+    readonly role: "INTERN" | "ENGINEER" | "ADMIN";
 }
+
+
