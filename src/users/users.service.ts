@@ -4,7 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { User } from './schemas/user.schema';
+import { User } from '../models/user.model';
 
 @Injectable()
 export class UsersService {
@@ -14,8 +14,16 @@ export class UsersService {
         private users: mongoose.Model<User>
     ) {}
 
-    async findAllUser(): Promise<User[]> {
-        const users = await this.users.find()
+    async findAllUser(role?: "INTERN" | "ENGINEER" | "ADMIN"): Promise<User[]> {
+        const filter = role ? { role } : {};
+        if (role && !["INTERN", "ENGINEER", "ADMIN"].includes(role)) {
+            throw new HttpException('Invalid Role!', HttpStatus.BAD_REQUEST);
+        }  
+        
+        const users = await this.users.find(filter); 
+        if (!users) {
+            throw new NotFoundException("No User not found!");
+        }
         return users;
     }
 
