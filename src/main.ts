@@ -9,6 +9,9 @@ async function bootstrap() {
   // Enable validation globally
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
+  app.enableCors();
+  app.setGlobalPrefix("api");
+
   const options = new DocumentBuilder()
   .setTitle('NestJS Demo API')
   // .addServer(process.env.DATABASE_URL, "Local Envirnment")
